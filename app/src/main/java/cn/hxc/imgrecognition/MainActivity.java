@@ -6,6 +6,8 @@ import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.app.Activity;
 import android.content.Intent;
@@ -21,6 +23,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
@@ -35,6 +38,10 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -48,11 +55,12 @@ import cn.hxc.imgrecognitionSRI_OCR.R;
 
 public class MainActivity extends Activity{
 
-	  public String userName;   //用户名
+      private static String TAG = "Opencv";
+	  public static String userName;   //用户名
 	  public String passWord;   //密码
 	  public String phoneSerialNumber;
 	  public AlertDialog diag;
-	  public String webLoginPath="http://101.132.159.49/PaisService.asmx/PaisLogin?";
+	  public String webLoginPath="http://119.23.33.12/PaisService.asmx/PaisLogin?";
 	  public String backLoginPath;
 	  inputInformation infor;
 	  public String result;//输入用户名和密码之后返回的结果代码
@@ -63,21 +71,20 @@ public class MainActivity extends Activity{
 		super.onCreate(savedInstanceState);
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 		setContentView(R.layout.activity_main);//软件activity的布局
-
-		/*Edit_username=(EditText)findViewById(R.id.Edit_username);
-		Edit_password=(EditText)findViewById(R.id.Edit_password);
-		Edit_username.setText("ninini");
-		Edit_password.setText("sdcdcd");*/
+		initData();
 	}
 
 	public void initData(){
-
+		Edit_username = (EditText)findViewById(R.id.Edit_username);
+		Edit_password = (EditText)findViewById(R.id.Edit_password);
+		Edit_username.getText().clear();
+		Edit_password.getText().clear();
 	}
 	//点击登录确定按钮执行的操作
 	public void login_Yes(View v){
 
 		TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
-		phoneSerialNumber = tm.getDeviceId();//获取智能设备唯一编号
+		//phoneSerialNumber = tm.getDeviceId();//获取智能设备唯一编号
 
 		TelephonyManager tmm = (TelephonyManager) getBaseContext().getSystemService(Context.TELEPHONY_SERVICE);
 
@@ -87,22 +94,18 @@ public class MainActivity extends Activity{
 		userName=((EditText)findViewById(R.id.Edit_username)).getText().toString();
 		passWord=((EditText)findViewById(R.id.Edit_password)).getText().toString();
 		if(!userName.isEmpty()&&!passWord.isEmpty()){
-			String temp="IMGMSG::"+ userName + "::" + passWord + "::" + phoneSerialNumber + "::END";
-			backLoginPath="Picinfo="+ URLEncoder.encode(temp);
-
-			Thread sendThread=new Thread(new Runnable() {
-				@Override
-				public void run() {
-					result=infor.GETUtils(webLoginPath,backLoginPath);
-					result=getContext(result);
-					judge(result);
-				}
-			});
-			sendThread.start();
+			if(userName.equals("admin") && passWord.equals("123456")){
+				Intent intent = new Intent(this, takePhoto.class);
+				startActivity(intent);
+			}
+			else{
+				String tip="用户名或者密码错误！";
+				Toast.makeText(this,tip,Toast.LENGTH_LONG).show();
+			}
 		}
 		else{
-			String a="请将带*的内容填完！";
-			Toast.makeText(this,a,Toast.LENGTH_LONG).show();
+			String tip="请将括号里的内容填完！";
+			Toast.makeText(this,tip,Toast.LENGTH_LONG).show();
 		}
 	}
 
@@ -166,6 +169,34 @@ public class MainActivity extends Activity{
 	public void forgetPSW(View v){
 		Intent intent = new Intent(MainActivity.this, forgetPassword.class);
 		startActivity(intent);
+	}
+
+	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
+		@Override
+		public void onManagerConnected(int status) {
+			switch (status) {
+				case LoaderCallbackInterface.SUCCESS: {
+					Log.i(TAG, "OpenCV loaded successfully");
+				}
+				break;
+				default: {
+					super.onManagerConnected(status);
+				}
+				break;
+			}
+		}
+	};
+
+	@Override
+	public void onResume() {
+		super.onResume();
+		if (!OpenCVLoader.initDebug()) {
+			Log.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+			OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_4_0, this, mLoaderCallback);
+		} else {
+			Log.d(TAG, "OpenCV library found inside package. Using it!");
+			mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
+		}
 	}
 }
 

@@ -15,6 +15,8 @@ import java.util.List;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.Environment;
 import android.view.LayoutInflater;
@@ -126,22 +128,9 @@ public class chooseImage extends Activity {
         for (int j = 0; j < no_writer; j++) {
             name = iamgeID[j].name;
             num = iamgeID[j].ID;
-            if (name.length() < 3) {
-                int a = 3 - name.length();
-                while (a != 0) {
-                    name += "__";
-                    a--;
-                }
-            }
-            num = String.valueOf(Integer.valueOf(num));
-            while (num.length() < 6) {
-                StringBuilder SB = new StringBuilder(num);
-                SB.insert(0, '0');
-                num = SB.toString();
-            }
-            String temps = file.toString() + File.separator + name + num + ".jpg";
-            //Toast.makeText(this,""+name+num,Toast.LENGTH_LONG).show();
-            bean = new Bean(temps, iamgeID[j].ID, iamgeID[j].name, false);
+            String temps = file.toString() + File.separator + num + ".jpg";
+            Bitmap showBitmap = BitmapFactory.decodeFile(temps);
+            bean = new Bean(showBitmap, iamgeID[j].name, false);
             mList.add(bean);
         }
     }
@@ -230,6 +219,10 @@ public class chooseImage extends Activity {
                 Environment.getExternalStorageDirectory()
                         + File.separator + "WR_LPAIS" + File.separator + "ShowImage");
 
+        File txtfile = new File(
+                Environment.getExternalStorageDirectory()
+                        + File.separator + "WR_LPAIS" + File.separator + "txt");
+
         if (!file.exists()) {
             file.mkdirs();
         }
@@ -287,30 +280,20 @@ public class chooseImage extends Activity {
 
                 name = iamgeID[j].name;
                 num = iamgeID[j].ID;
-                if (name.length() < 3) {
-                    int a = 3 - name.length();
-                    while (a != 0) {
-                        name += "__";
-                        a--;
-                    }
-                }
-                num = String.valueOf(Integer.valueOf(num));
-                while (num.length() < 6) {
-                    StringBuilder SB = new StringBuilder(num);
-                    SB.insert(0, '0');
-                    num = SB.toString();
-                }
-                String temps = file.toString() + File.separator + name + num + ".jpg";
-                String Anothertemps=Anotherfile.toString() + File.separator + name + num + ".jpg";;
 
-                    //String temps = file.toString()+File.separator+iamgeID[j].ID+".jpg";
-                    //String temps = file.toString()+File.separator+iamgeID[j].ID+".jpg";
+                String temps = file.toString() + File.separator + num + ".jpg";
+                String Anothertemps = Anotherfile.toString() + File.separator + num + ".jpg";
+
+                String tempTxt = txtfile.toString() + File.separator + num + ".txt";
+
                     File dfile = new File(temps);
                     File Anotherdfile=new File(Anothertemps);
+                    File tempTxtFile = new File(tempTxt);
                     boolean aaflag = false;
                     if (dfile.isFile()) {
                         aaflag = dfile.delete();
                         Anotherdfile.delete();
+                        tempTxtFile.delete();
                     }
                     if (!aaflag) {
                         Toast.makeText(this, files[j].getName() + "删除失败！", Toast.LENGTH_LONG).show();
@@ -319,9 +302,6 @@ public class chooseImage extends Activity {
                 }
             }
             if (newdosomething) {
-                File txtfile = new File(
-                        Environment.getExternalStorageDirectory()
-                                + File.separator + "WR_LPAIS" + File.separator + "txt");
 
                 if (!txtfile.exists()) {
                     txtfile.mkdirs();

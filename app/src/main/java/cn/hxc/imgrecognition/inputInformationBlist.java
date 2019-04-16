@@ -50,9 +50,12 @@ public class inputInformationBlist extends Activity{
     public String nowTime;//获取的系统时间
     public String phoneID;//手机唯一的ID
     public String SendString;//手机向webAPI发送的字符串
-    public String txtUrlWeb="http://101.132.159.49/PaisService.asmx/PaisUploadTxts?";//需要上传txt的URL
-    public String imageUrlWeb="http://101.132.159.49/PaisService.asmx/PaisUploadImages?";//需要上传jpg的URL
-    public String oracleUrl="http://101.132.159.49/PaisService.asmx/PaisInsertImages?";//需要上传数据库的URL
+    //public String txtUrlWeb="http://101.132.159.49/PaisService.asmx/PaisUploadTxts?";//需要上传txt的URL
+    //public String imageUrlWeb="http://101.132.159.49/PaisService.asmx/PaisUploadImages?";//需要上传jpg的URL
+    //public String oracleUrl="http://101.132.159.49/PaisService.asmx/PaisInsertImages?";//需要上传数据库的URL
+    public String txtUrlWeb="http://119.23.33.12/PaisService.asmx/PaisUploadTxts?";//需要上传txt的URL
+    public String imageUrlWeb="http://119.23.33.12/PaisService.asmx/PaisUploadImages?";//需要上传jpg的URL
+    public String oracleUrl="http://119.23.33.12/PaisService.asmx/PaisInsertImages?";//需要上传数据库的URL
     public String oracleString;
     public String imageBackUrl;
     public String txtBackUrl;//完整的url，包括上传的字符串
@@ -71,6 +74,7 @@ public class inputInformationBlist extends Activity{
     String toastResult;//上传完成后最后弹出的结果
     CheckBox ckb_save;
     CheckBox ckb_send;
+    EditText cjr_login;
 
     protected void onCreate(Bundle savedInstanceState) {
         // TODO Auto-generated method stub
@@ -85,6 +89,8 @@ public class inputInformationBlist extends Activity{
 
         ckb_save = (CheckBox) findViewById(R.id.ckb_save);
         ckb_send = (CheckBox) findViewById(R.id.ckb_send);
+        cjr_login = (EditText) findViewById(R.id.cjname);
+        cjr_login.setText(MainActivity.userName);
     }
 
     /*点击确定按钮执行的操作，将图片及其信息保存在指定文件夹下
@@ -129,7 +135,7 @@ public class inputInformationBlist extends Activity{
 
 
             inputInformationBlist.this.finish();
-            Intent intent = new Intent(inputInformationBlist.this, blackList.class);
+            Intent intent = new Intent(inputInformationBlist.this, blackListFromPhone.class);
             startActivity(intent);
         }
         else
@@ -191,7 +197,7 @@ public class inputInformationBlist extends Activity{
         });
         sendThread.start();
 
-        Toast.makeText(this,"上传成功！",Toast.LENGTH_LONG).show();
+        //Toast.makeText(this,"上传成功！",Toast.LENGTH_LONG).show();
 
         TimerTask task = new TimerTask(){
             public void run(){

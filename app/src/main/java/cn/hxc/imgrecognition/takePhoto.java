@@ -1,27 +1,23 @@
 package cn.hxc.imgrecognition;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.sql.Time;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.TimerTask;
 
-import cn.hxc.imgrecognition.SensorControler.CameraFocusListener;
 import cn.hxc.imgrecognitionSRI_OCR.R;
 
-import android.R.string;
-import android.annotation.TargetApi;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
@@ -33,61 +29,44 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PixelFormat;
-import android.graphics.Point;
 import android.graphics.Rect;
-import android.graphics.RectF;
+import android.graphics.YuvImage;
 import android.graphics.drawable.Drawable;
 import android.hardware.Camera;
-import android.hardware.Camera.Area;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
-import android.hardware.Camera.ShutterCallback;
 import android.hardware.Camera.Size;
-import android.media.AudioManager.OnAudioFocusChangeListener;
-import android.opengl.Visibility;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.CountDownTimer;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-import android.os.SystemClock;
-import android.sax.StartElementListener;
-import android.support.v4.view.ActionProvider.VisibilityListener;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
 import android.view.KeyEvent;
-import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.OrientationEventListener;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.view.View.OnFocusChangeListener;
 import android.view.View.OnTouchListener;
-import android.view.ViewGroup;
-import android.view.ViewGroup.LayoutParams;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.AbsoluteLayout;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
-import android.widget.SeekBar;
-import android.widget.Spinner;
 import android.widget.Toast;
-import android.widget.SeekBar.OnSeekBarChangeListener;
 
 public class takePhoto extends Activity implements AutoFocusCallback,
-		OnTouchListener{
+		OnTouchListener, SensorEventListener {
 	public static long Starttime;
 	public static long Endtime;
 	public static final String TAG = "takePhoto";
@@ -101,6 +80,7 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 	private Button btn_takephoto;
 	private boolean preview;
 	private Activity activity;
+	//public Bitmap bitmap; //手机拍摄的图片全图
 
 	public ImageButton B_contrast;
 	public ImageButton B_QueryLoc;
@@ -112,7 +92,7 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 	private Parameters parameters;
 	private int zoomValue;
 	private int oldZoomValue;
-	// private SensorControler mSensorControler;
+	 private SensorControler mSensorControler;
 	private boolean isFlashon = false;
 
 	private verticalSeekBar seekBar;
@@ -128,6 +108,9 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 	private float mScreenHeight;
 	private int width;
 	private int height;
+
+	//存储绿框框出的的左、上、右、下
+	//public static RectF mBitmapRect;
 
 	// ��������
 	private float old_x;
@@ -150,7 +133,7 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 	private Paint paint;
 	private int margain;
 	private tiltImageView tilt;
-
+	private SensorManager sensorManager;
 	// ˫�ֲ���
 	private int topBord;
 	private int leftBord;
@@ -174,7 +157,7 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 	private static final float minTopSacle = (float) (1.0 / 2);//0.25
 	private static final int minRectHeight = 20;
 
-	private Rect recognizeRect;
+	public static Rect recognizeRect;
 		private Drawable picDrawable;
 
 		private View view_focus = null;
@@ -182,6 +165,7 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 
 	//定义是否退出程序的标记
 	private boolean isExit=false;
+
 	//定义接受用户发送信息的handler
 	private Handler mHandler = new Handler(){
 		@Override
@@ -192,7 +176,15 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 		}
 	};
 
+	OrientationEventListener orientationEventListener;
+	// 这是记录当前角度
+	int rotationFlag = 90;
+	//默认是竖屏状态，由于由于系统默认的是横屏，所以需要旋转90
+	int rotationRecord = 90;
 
+	int a = 1;
+
+	@SuppressLint("NewApi")
 	@Override
 		protected void onCreate(Bundle savedInstanceState) {
 			// TODO Auto-generated method stub
@@ -204,12 +196,19 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 			window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 			setContentView(R.layout.takephoto);
 
-			WindowManager wm = (WindowManager) this
+		WindowManager wm = (WindowManager) this
 					.getSystemService(this.WINDOW_SERVICE);
 			DisplayMetrics outMetrics = new DisplayMetrics();
 		wm.getDefaultDisplay().getMetrics(outMetrics);
+
+		this.getWindow().setFormat(PixelFormat. TRANSLUCENT);
+
 		mScreenWidth = outMetrics.widthPixels; //屏幕宽度
-		mScreenHeight = outMetrics.heightPixels; //屏幕高度
+		boolean hasNavigationBar = checkDeviceHasNavigationBar(this);
+		/*if(hasNavigationBar)
+			mScreenHeight = outMetrics.heightPixels - getNavigationBarHeight(); //屏幕高度
+		else*/
+			mScreenHeight = outMetrics.heightPixels; //屏幕高度
 
 		B_contrast = (ImageButton) findViewById(R.id.B_contrast);
 		B_QueryLoc = (ImageButton) findViewById(R.id.B_QueryLoc);
@@ -232,7 +231,7 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 		btn_flash = (Button) findViewById(R.id.flash_btn);
 		btn_flash_on = (Button) findViewById(R.id.flash_btn_on);
 		// tilt=(tiltImageView) findViewById(R.id.tilt);
-		frameLayout = (PreviewFrameLayout) findViewById(R.id.frame_layout);
+		frameLayout = (PreviewFrameLayout)findViewById(R.id.frame_layout);
 		// frameLayout.setOnTouchListener(l);
 		view_focus = findViewById(R.id.view_focus);
 
@@ -268,8 +267,16 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 			//Toast.makeText(MainActivity.this, "不是第一次", Toast.LENGTH_LONG).show();
 		}
 		// imageProcess.noequl("positionLeft=", getBottomPosition());
-		// mSensorControler = new SensorControler(this);
+		 //mSensorControler = new SensorControler(this);
+
+		{
+			sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+			sensorManager.registerListener(this,
+			sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),600000);
+		}
+
 		initTakephoto();
+		rotationUIListener();
 	}
 
 	public void deleteFile(File file) {
@@ -361,9 +368,68 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 		surfaceView.setFocusable(true);
 		surfaceView.getHolder().setKeepScreenOn(true);
 		surfaceView.getHolder().addCallback(new SufaceListener());
-		
 		surfaceView.setOnTouchListener(this);
 		rectView.setOnTouchListener(this);
+	}
+
+	@Override
+	public void onSensorChanged(SensorEvent event) {
+		Log.i("preview","sensor");
+		if(camera==null)
+		    return;
+		camera.setOneShotPreviewCallback(new Camera.PreviewCallback() {
+			@Override
+			public void onPreviewFrame(byte[] data, Camera camera) {
+				Camera.Size previewSize =camera.getParameters().getPreviewSize();
+				YuvImage image = new YuvImage(data,ImageFormat.NV21,previewSize.width,previewSize.height,null);
+				ByteArrayOutputStream stream = new ByteArrayOutputStream(data.length);
+				image.compressToJpeg(new Rect(0,0,previewSize.width,previewSize.height),100,stream);
+				Bitmap bmp=BitmapFactory.decodeByteArray(stream.toByteArray(),0,stream.toByteArray().length);
+				bmp = rotaingImageView(90,bmp);
+				Boolean res = isHorizontal.check(bmp);
+				if(res)
+					Log.i("preview_back","可以");
+				else
+					Log.i("preview_back","不可以");
+				rectView.setVisibility(res?View.VISIBLE:View.INVISIBLE);
+				if(res){
+					btn_takephoto.setEnabled(true);
+					if (camera != null) {
+						try {
+							//Camera.startPreview();
+							//Camera.autoFocus(mAutoFocusCallback);
+							camera.takePicture(null, null, mJpegPictureCallback);
+						} catch (Exception e) {
+							System.out.println("takepicture failed...");
+						}
+					}
+				}
+			}
+		});
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		sensorManager.unregisterListener(this);
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		sensorManager.registerListener(this,
+				sensorManager.getDefaultSensor(Sensor.TYPE_ORIENTATION),600000);
+	}
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        sensorManager.unregisterListener(this);
+    }
+
+    @Override
+	public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
 	}
 
 	private final class SufaceListener implements SurfaceHolder.Callback {
@@ -386,7 +452,6 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 					e.printStackTrace();
 				}
 				camera.startPreview();
-				
 				preview = true;
 				 onMyFoucs();
 
@@ -407,7 +472,7 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 	}
 
 	public void onMyFoucs() {
-		if (camera != null&&preview==true) {
+		if (camera != null && preview==true) {
 			camera.autoFocus(this);
 		}
 		
@@ -434,6 +499,7 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 				view_focus.setY(mScreenHeight / 2 - (tempHeight / 2));
 
 			}
+
 			view_focus.setBackgroundDrawable(getResources().getDrawable(
 					R.drawable.ic_focus_focused));
 
@@ -484,22 +550,18 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 		}
 	}
 
-	// ��������ĳ�ʼ������
 	private void initCamera() {
 		try {
 
 			btn_takephoto.setEnabled(true);
-			parameters = camera.getParameters();// ����ͷ�Ĳ���
-			// List<int[]> range=parameters.getSupportedPreviewFpsRange();
-			// parameters.setPreviewFrameRate(20);// ÿ��20֡
-			// List<Integer> formerate= parameters.getSupportedPreviewFormats();
-			// parameters.setPreviewFormat(formerate.get(formerate.size()/2));
+			parameters = camera.getParameters();
 
-			if (camera.getParameters().isZoomSupported()) {  //缩放
+			/*if (camera.getParameters().isZoomSupported()) {  //缩放
 				int zoom = camera.getParameters().getMaxZoom();// 得到的缩放所允许的最大值为快照
 				parameters.setZoom(zoom / 5);
 				imageProcess.noequl("zoom---------", zoom);
-			}
+			}*/
+
 
 			//闪光灯
 			List<String> flashModes = parameters.getSupportedFlashModes();
@@ -528,39 +590,26 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 
 			WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE); // ��ȡ��ǰ��Ļ����������
 			Display display = wm.getDefaultDisplay(); // ��ȡ��Ļ��Ϣ��������
-			// parameters.setPreviewSize(display.getWidth(),
-			// display.getHeight());
-			// // ����
 
 			List<Size> SupportedPictureSizes= parameters
-					.getSupportedPictureSizes();// ��ȡ֧��Ԥ����Ƭ�ĳߴ�
-//			List<Size> SupportedPictureSizes = parameters
-//					.getSupportedPreviewSizes();// ��ȡ֧��Ԥ����Ƭ�ĳߴ�
-			// Size previewSize = SupportedPreviewSizes.get(0);// ��Listȡ��Size
-			// sWidth = previewSize.width;
-			// sHight = previewSize.height;
-//			Size previewSize = getOptimalPreviewSize(SupportedPictureSizes,
-//					display.getWidth(), display.getHeight());
-
-//			Size previewSize = CameraUtil.getInstance().getPictureSize(SupportedPictureSizes,400);
-//			sWidth = previewSize.width;
-//			sHight = previewSize.height;
+					.getSupportedPictureSizes();
 
 			Size picSize = CameraUtil.getInstance().getPictureSize(parameters
 					.getSupportedPictureSizes(),800);
-//
-//			imageProcess.noequl("**********sWidth=", sWidth);
-//			imageProcess.noequl("*********sHight=", sHight);
-//			imageProcess.noequl("", mScreenHeight);
-//			// Toast.makeText(takePhoto.this, ""+mScreenHeight, 1).show();
-			//parameters.setPreviewSize(sWidth, sHight);
-		//	parameters.setPictureSize(sWidth, sHight);
+
 			parameters.setPictureSize(picSize.width, picSize.height);
 
-			// ��������Ԥ��
+			/*List<Size> SupportedPictureSizes= parameters
+					.getSupportedPictureSizes();
+
+			Size picSize = CameraUtil.getInstance().getPictureSize(parameters
+					.getSupportedPictureSizes(),800);
+
+			parameters.setPictureSize(picSize.width, picSize.height);*/
+
 			setCameraDisplayOrientation(activity,
 					Camera.CameraInfo.CAMERA_FACING_BACK, camera);//后置摄像头
-			
+
 			focosTouchRect();
 			camera.cancelAutoFocus();
 			camera.setParameters(parameters);
@@ -576,16 +625,6 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 		//获取在整个屏幕内的绝对坐标，这个值是要从屏幕顶端算起，也就是包括了通知栏的高度。
 		//location [0]--->x坐标,location [1]--->y坐标
 		frameLayout.getLocationOnScreen(location);
-		//�۽�����ʾ�ڴ����ĵط�
-//		Rect focusRect = calculateTapArea(view_focus.getWidth(),
-//				view_focus.getHeight(), 1f, event.getRawX(), event.getRawY(),
-//				location[0], location[0] + frameLayout.getWidth(), location[1],
-//				location[1] + frameLayout.getHeight());
-//		Rect meteringRect = calculateTapArea(view_focus.getWidth(),
-//				view_focus.getHeight(), 1.5f, event.getRawX(), event.getRawY(),
-//				location[0], location[0] + frameLayout.getWidth(), location[1],
-//				location[1] + frameLayout.getHeight());
-		//�۽�����ʾ�ڹ̶��㣨1/4*mscreenheight,1/2*mscreenwidth��
 		Rect focusRect = calculateTapArea(view_focus.getWidth(),
 				view_focus.getHeight(), 1f, mScreenWidth/2, mScreenHeight/4,
 				location[0], location[0] + frameLayout.getWidth(), location[1],
@@ -596,9 +635,6 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 				location[1] + frameLayout.getHeight());
 		parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO); //设置对焦模式
 
-		// System.out.println("CustomCameraView getMaxNumFocusAreas = " +
-		// parameters.getMaxNumFocusAreas());
-
 		if(Build.VERSION.SDK_INT>=14) {
 			if (parameters.getMaxNumFocusAreas() > 0) {
 				List<Camera.Area> focusAreas = new ArrayList<Camera.Area>();
@@ -607,8 +643,6 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 				parameters.setFocusAreas(focusAreas);
 			}
 
-			// System.out.println("CustomCameraView getMaxNumMeteringAreas = " +
-			// parameters.getMaxNumMeteringAreas());
 			if (parameters.getMaxNumMeteringAreas() > 0) {
 				List<Camera.Area> meteringAreas = new ArrayList<Camera.Area>();
 				meteringAreas.add(new Camera.Area(meteringRect, 1000));
@@ -620,24 +654,9 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 			camera.setParameters(parameters);
 		} catch (Exception e) {
 		}
-		//onMyFoucs();
 		onMyFoucs();
 	}
 
-	/**
-	 * ���㽹�㼰�������
-	 * 
-	 * @param focusWidth
-	 * @param focusHeight
-	 * @param areaMultiple
-	 * @param x
-	 * @param y
-	 * @param previewleft
-	 * @param previewRight
-	 * @param previewTop
-	 * @param previewBottom
-	 * @return Rect(left,top,right,bottom) : left��top��right��bottom������ʾ��������Ϊԭ�������
-	 */
 	public Rect calculateTapArea(int focusWidth, int focusHeight,
 			float areaMultiple, float x, float y, int previewleft,
 			int previewRight, int previewTop, int previewBottom) {
@@ -665,7 +684,6 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 		return x;
 	}
 
-
 	public void flash(View v) {
 		try {
 			if (isFlashon == false) {
@@ -685,37 +703,46 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 	}
 
 	public void takepicture(View v) {
-		Starttime=System.currentTimeMillis();
 		// nextLayout.setVisibility(ViewGroup.VISIBLE);
 		// fisrtLayout.setVisibility(ViewGroup.GONE);
-		btn_takephoto.setEnabled(false);
-		if (camera != null) {// ����ǰ�жϣ��������������Ϊnull
+		btn_takephoto.setEnabled(true);
+		if (camera != null) {
 			try {
 				//Camera.startPreview();
 				//Camera.autoFocus(mAutoFocusCallback);
 				camera.takePicture(null, null, mJpegPictureCallback);
-
 			} catch (Exception e) {
 				System.out.println("takepicture failed...");
 			}
 		}
-		Endtime=System.currentTimeMillis();
 	}
 
-	/*public boolean onKeyDown(int keyCode, KeyEvent event) {
-		switch (keyCode) {
-		case KeyEvent.KEYCODE_CAMERA:
-		case KeyEvent.KEYCODE_5:
-			takepicture(new View(this));
-			break;
-		case KeyEvent.KEYCODE_BACK:
-			back(new View(this));
-			break;
+	/**
+	 * 旋转图片
+	 * @param angle 旋转角度
+	 * @param bitmap 要处理的Bitmap
+	 * @return 处理后的Bitmap
+	 */
+	public Bitmap rotaingImageView(int angle, Bitmap bitmap)
+	{
+		// 旋转图片 动作
+		Matrix matrix = new Matrix();
+		matrix.postRotate(angle);
+		// 创建新的图片
+		Bitmap resizedBitmap = Bitmap.createBitmap(bitmap, 0, 0,
+				bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+		if (resizedBitmap != bitmap && bitmap != null && !bitmap.isRecycled()){
+			bitmap.recycle();
+			bitmap = null;
 		}
+		return resizedBitmap;
+	}
 
-		return true;
+	public int Dp2Px(Context context, float dp) {
+		final float scale = context.getResources().getDisplayMetrics().density; //当前屏幕密度因子
+		return (int) (dp * scale + 0.5f);
+	}
 
-	}*/
 
 	PictureCallback mJpegPictureCallback = new PictureCallback() {
 
@@ -754,23 +781,44 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 				Bitmap.Config  config：一个枚举类型的配置，可以定义截到的新位图的质量
 				返回值：返回一个剪切好的Bitmap
 				 */
-				//Bitmap bitmap = Bitmap.createBitmap(bitmap1, 0, (int)(bitmap1.getHeight()*0.12f),
-						 //bitmap1.getWidth(),(int)(bitmap1.getHeight()*0.76f), matrix, false);
 				Bitmap bitmap = Bitmap.createBitmap(bitmap1, 0, (int)(bitmap1.getHeight()*0.12f),
 						bitmap1.getWidth(),(int)(bitmap1.getHeight()*0.76f), matrix, false);
+
 
 				float scaleX = bitmap.getWidth() / mScreenWidth;
 				float scaleY = bitmap.getHeight() / mScreenHeight;
 
 				int left = (int) (scaleX * leftBord);
 				int top = (int)(topBord* scaleY);
-				int width = (int) ( (mScreenWidth-2*leftBord) * scaleX);
-				int height = (int) ((mScreenHeight/2-topBord)*2* scaleY);
+				int width = (int) ((mScreenWidth-2*leftBord) * scaleX);
+				int height = (int) ((mScreenHeight/2 - topBord)*2* scaleY);
+
+				int deviationHeight = (int)(Dp2Px(takePhoto.this,60)*scaleY);
+				//mBitmapRect = new RectF(leftBord, top - deviationHeight , mScreenWidth -leftBord, top - height - deviationHeight);
+				//mBitmapRect = new RectF(leftBord, top + 60 , mScreenWidth -leftBord, top - (mScreenHeight - 2*topBord) + 60);
+				//mBitmapRect = new RectF(leftBord, top - deviationHeight, mScreenWidth -leftBord, top - (mScreenHeight - 2*topBord) - deviationHeight);
+				//mBitmapRect = new RectF(leftBord, top - deviationHeight,  mScreenWidth -leftBord, top - (mScreenHeight - 2*topBord) - deviationHeight);
+				//mBitmapRect = new RectF(leftBord, topBord , mScreenWidth -leftBord, topBord - (mScreenHeight - 2*topBord));
 				Bitmap rotaBitmap = Bitmap.createBitmap(bitmap, left, top, width, height);
+
+				//竖屏
+				/*if(rotationFlag == 0){
+				}
+				//左横屏
+				else if(rotationFlag == 90){
+					rotaBitmap = rotaingImageView(270,rotaBitmap);
+				}
+				//右横屏
+				else if(rotationFlag == 270){
+					rotaBitmap = rotaingImageView(90,rotaBitmap);
+				}*/
+				if(width < height && rotationFlag == 90)
+					rotaBitmap = rotaingImageView(270,rotaBitmap);
+				if(width < height && rotationFlag == 270)
+					rotaBitmap = rotaingImageView(90,rotaBitmap);
 
 				try
 				{
-
 					File file1 = new File(
 							Environment.getExternalStorageDirectory()
 									+ File.separator + "WR_LPAIS");
@@ -786,6 +834,18 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 					rotaBitmap.compress(CompressFormat.JPEG, 100, fos1);
 					fos1.flush();
 					fos1.close();
+
+					fos1 = new FileOutputStream(file1 + File.separator
+							+ "originalPic.jpg");
+					bitmap.compress(CompressFormat.JPEG, 100, fos1);
+					fos1.flush();
+					fos1.close();
+
+					fos1 = new FileOutputStream(file1 + File.separator
+							+ "originalPic2.jpg");
+					bitmap1.compress(CompressFormat.JPEG, 100, fos1);
+					fos1.flush();
+					fos1.close();
 				}
 				catch (Exception e)
 				{
@@ -797,8 +857,7 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 				bitmap1.recycle();
 				bitmap1=null;
 
-				Intent intent = new Intent(takePhoto.this,
-						processActivity.class);
+				Intent intent = new Intent(takePhoto.this,ImageCut.class);
 				startActivity(intent);
 			} else {
 				// �������
@@ -809,6 +868,79 @@ public class takePhoto extends Activity implements AutoFocusCallback,
 			}
 		}
 	};
+
+	//获取是否存在NavigationBar
+	public static boolean checkDeviceHasNavigationBar(Context context) {
+		boolean hasNavigationBar = false;
+		Resources rs = context.getResources();
+		int id = rs.getIdentifier("config_showNavigationBar", "bool", "android");
+		if (id > 0) {
+			hasNavigationBar = rs.getBoolean(id);
+		}
+		try {
+			Class systemPropertiesClass = Class.forName("android.os.SystemProperties");
+			Method m = systemPropertiesClass.getMethod("get", String.class);
+			String navBarOverride = (String) m.invoke(systemPropertiesClass, "qemu.hw.mainkeys");
+			if ("1".equals(navBarOverride)) {
+				hasNavigationBar = false;
+			} else if ("0".equals(navBarOverride)) {
+				hasNavigationBar = true;
+			}
+		} catch (Exception e) {
+
+		}
+		return hasNavigationBar;
+	}
+
+	private int getNavigationBarHeight() {
+		Resources resources = this.getResources();
+		int resourceId = resources.getIdentifier("navigation_bar_height","dimen", "android");
+		int height = resources.getDimensionPixelSize(resourceId);
+		Log.v("dbw", "Navi height:" + height);
+		return height;
+	}
+	/**
+	 * 重力感应监听回调
+	 */
+	private void rotationUIListener()
+	{
+		orientationEventListener = new OrientationEventListener(this)
+		{
+			@Override
+			public void onOrientationChanged(int rotation)
+			{
+				if (((rotation >= 0) && (rotation <= 30)) || (rotation >= 330))
+				{
+					// 竖屏
+					if (rotationFlag != 0)
+					{
+						rotationRecord = 90;
+						rotationFlag = 0;
+					}
+				}
+				else if (((rotation >= 250) && (rotation <= 310)))
+				{
+					// 左横屏
+					if (rotationFlag != 90)
+					{
+						rotationRecord = 0;
+						rotationFlag = 90;
+					}
+				}
+				else if (rotation > 40 && rotation < 95)
+				{
+					// 右横屏
+					if (rotationFlag != 270)
+					{
+						rotationRecord = 180;
+						rotationFlag = 270;
+					}
+				}
+			}
+		};
+		orientationEventListener.enable();
+	}
+
 
 public BitmapFactory.Options getOption(BitmapFactory.Options opts){
 

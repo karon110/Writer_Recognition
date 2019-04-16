@@ -1,27 +1,19 @@
 package cn.hxc.imgrecognition;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
-import android.util.DisplayMetrics;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.ImageButton;
-import android.widget.Spinner;
 import android.widget.Toast;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import cn.hxc.imgrecognitionSRI_OCR.R;
 
@@ -51,30 +43,25 @@ public class queryDBInfor extends Activity{
 
         setContentView(R.layout.query_information);
 
-        B_contrast = (ImageButton) findViewById(R.id.B_contrast);
-        B_QueryLoc = (ImageButton) findViewById(R.id.B_QueryLoc);
-        B_QueryDB = (ImageButton) findViewById(R.id.B_QueryDB);
-        B_set = (ImageButton) findViewById(R.id.B_set);
-        B_blist = (ImageButton) findViewById(R.id.B_blist);
-
-        B_contrast.setBackgroundResource(R.drawable.contrast);
-        B_QueryLoc.setBackgroundResource(R.drawable.searchloc);
-        B_QueryDB.setBackgroundResource(R.drawable.searchdb_change);
-        B_set.setBackgroundResource(R.drawable.set);
-        B_blist.setBackgroundResource(R.drawable.blacklist);
-
         wView = (MyWebView) findViewById(R.id.webView);
-        TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
-        String phoneID = tm.getDeviceId();//获取智能设备唯一编号
-        wView.loadUrl("http://101.132.159.49/SearchUserDatas.aspx?phoneid="+phoneID+"");
-        wView.setWebViewClient(new WebViewClient() {
-            //在webview里打开新链接
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
-                return true;
-            }
-        });
+        if (checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+            TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
+            String phoneID = tm.getDeviceId();//获取智能设备唯一编号
+
+            wView.loadUrl("http://119.23.33.12/SearchUserDatas.aspx?phoneid="+phoneID+"");
+            wView.setWebViewClient(new WebViewClient() {
+                //在webview里打开新链接
+                @Override
+                public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                    view.loadUrl(url);
+                    return true;
+                }
+            });
+        }
+        else{
+            Toast.makeText(this,"请开放手机通话权限！",Toast.LENGTH_LONG).show();
+        }
+
 
         //比如这里做一个简单的判断，当页面发生滚动，显示那个Button
 

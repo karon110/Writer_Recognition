@@ -63,7 +63,7 @@ public class BeanAdapter extends BaseAdapter
             holder = (ViewHolder)convertView.getTag();
         }
         final Bean bean = mList.get(position);
-        Bitmap b3 = BitmapFactory.decodeFile(bean.getDrawable());
+        Bitmap b3 = bean.getBitmap();
         holder.icon.setImageBitmap(b3);
 
         holder.cb.setChecked(bean.getIsChcked());

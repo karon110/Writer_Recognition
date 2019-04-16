@@ -25,9 +25,11 @@ import android.graphics.PointF;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.support.annotation.Dimension;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.util.DisplayMetrics;
 import android.view.MotionEvent;
 import android.widget.ImageView;
 
@@ -36,6 +38,8 @@ import com.edmodo.cropper.cropwindow.handle.Handle;
 import com.edmodo.cropper.util.AspectRatioUtil;
 import com.edmodo.cropper.util.HandleUtil;
 import com.edmodo.cropper.util.PaintUtil;
+
+import cn.hxc.imgrecognition.takePhoto;
 import cn.hxc.imgrecognitionSRI_OCR.R;
 /**
  * Custom view that provides cropping capabilities to an image.
@@ -358,10 +362,32 @@ public class CropImageView extends ImageView {
             final float horizontalPadding = 0.1f * bitmapRect.width();
             final float verticalPadding = 0.1f * bitmapRect.height();
 
-            Edge.LEFT.setCoordinate(bitmapRect.left + horizontalPadding);
-            Edge.TOP.setCoordinate(bitmapRect.top + verticalPadding);
-            Edge.RIGHT.setCoordinate(bitmapRect.right - horizontalPadding);
-            Edge.BOTTOM.setCoordinate(bitmapRect.bottom - verticalPadding);
+            /*Edge.LEFT.setCoordinate(takePhoto.mBitmapRect.left);
+            Edge.TOP.setCoordinate(takePhoto.mBitmapRect.top);
+            Edge.RIGHT.setCoordinate(takePhoto.mBitmapRect.right);
+            Edge.BOTTOM.setCoordinate(takePhoto.mBitmapRect.bottom);*/
+
+            DisplayMetrics dm = new DisplayMetrics();
+            dm = getResources().getDisplayMetrics();
+            float density = dm.density; // 屏幕密度（像素比例：0.75/1.0/1.5/2.0）
+            int densityDPI = dm.densityDpi; // 屏幕密度（每寸像素：120/160/240/320）
+            int screenWidth = dm.widthPixels; // 屏幕宽（像素，如：3200px）1080
+            int screenHeight = dm.heightPixels; // 屏幕高（像素，如：1280px）2034
+
+            /*Edge.LEFT.setCoordinate(takePhoto.recognizeRect.left);
+            Edge.TOP.setCoordinate(takePhoto.recognizeRect.top-75);
+            Edge.RIGHT.setCoordinate(takePhoto.recognizeRect.right);
+            Edge.BOTTOM.setCoordinate(takePhoto.recognizeRect.bottom-80);*/
+
+            Edge.LEFT.setCoordinate(0);
+            Edge.TOP.setCoordinate(takePhoto.recognizeRect.top-145);
+            Edge.RIGHT.setCoordinate(screenWidth);
+            Edge.BOTTOM.setCoordinate(takePhoto.recognizeRect.bottom + 50);
+
+            /*Edge.LEFT.setCoordinate(bitmapRect.left + horizontalPadding); //107.9
+            Edge.TOP.setCoordinate(bitmapRect.top + verticalPadding);     //189.4
+            Edge.RIGHT.setCoordinate(bitmapRect.right - horizontalPadding); //971.1
+            Edge.BOTTOM.setCoordinate(bitmapRect.bottom - verticalPadding); //1704.6*/
         }
     }
 

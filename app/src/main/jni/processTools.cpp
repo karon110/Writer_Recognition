@@ -85,4 +85,3 @@ JNIEXPORT jstring JNICALL Java_cn_hxc_imgrecognition_processActivity_callint(
     //jstring strResult=CharTojstring(env,cc);
 	//return strResult;
 }
-

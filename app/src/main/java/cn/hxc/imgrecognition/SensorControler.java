@@ -76,12 +76,12 @@ public class SensorControler implements  SensorEventListener {
 		if (event.sensor == null) {
 			return;
 		}
-
+		Log.i("preview_back","sensor");
 		if (isFocusing) {
 			restParams();
 			return;
 		}
-
+		Log.i("preview_back","sensor");
 		if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 			int x = (int) event.values[0];
 			int y = (int) event.values[1];

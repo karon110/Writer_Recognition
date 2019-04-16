@@ -103,6 +103,7 @@ public class HttpUtils {
             conn.setRequestMethod("GET");
             conn.setRequestProperty("accept", "*/*");
             conn.setRequestProperty("connection", "Keep-Alive");
+            conn.connect();
             if (conn.getResponseCode() == 200)
             {
                 is = conn.getInputStream();
@@ -142,9 +143,7 @@ public class HttpUtils {
             }
             conn.disconnect();
         }
-
         return null ;
-
     }
 
     /**

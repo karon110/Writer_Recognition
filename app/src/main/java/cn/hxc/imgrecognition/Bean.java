@@ -1,18 +1,25 @@
 package cn.hxc.imgrecognition;
 
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 
 public class Bean
 {
-    private String drawable;
+    private Bitmap bitmap;
     private String title;
     private String info;
     private boolean isChcked;
 
-    public Bean(String drawable, String title, String info, boolean isChcked)
+    /*public Bean(String drawable, String title, String info, boolean isChcked)
     {
         this.drawable = drawable;
         this.title = title;
+        this.info = info;
+        this.isChcked = isChcked;
+    }*/
+    public Bean(Bitmap bitmap, String info, boolean isChcked)
+    {
+        this.bitmap = bitmap;
         this.info = info;
         this.isChcked = isChcked;
     }
@@ -44,8 +51,8 @@ public class Bean
         return title;
     }
 
-    public String getDrawable()
+    public Bitmap getBitmap()
     {
-        return drawable;
+        return bitmap;
     }
 }

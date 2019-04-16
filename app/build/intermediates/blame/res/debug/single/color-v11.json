@@ -1,26 +1,10 @@
 [
     {
-        "merged": "C:\\Users\\刘欢\\Desktop\\Work\\0328\\app\\build\\intermediates\\res\\merged\\debug\\color-v11\\abc_background_cache_hint_selector_material_light.xml",
-        "source": "C:\\Users\\刘欢\\.gradle\\caches\\transforms-1\\files-1.1\\appcompat-v7-25.0.1.aar\\03aaa23ebbea11dbacd4cf09639e8fd6\\res\\color-v11\\abc_background_cache_hint_selector_material_light.xml"
+        "merged": "F:\\Work\\Android Project\\sdk28\\app\\build\\intermediates\\res\\merged\\debug\\color-v11\\abc_background_cache_hint_selector_material_light.xml",
+        "source": "C:\\Users\\Administrator\\.gradle\\caches\\transforms-1\\files-1.1\\appcompat-v7-25.0.1.aar\\aae4edb8004783cb35e8514a3c8bc8c7\\res\\color-v11\\abc_background_cache_hint_selector_material_light.xml"
     },
     {
-        "merged": "C:\\Users\\刘欢\\Desktop\\Work\\0421\\app\\build\\intermediates\\res\\merged\\debug\\color-v11\\abc_background_cache_hint_selector_material_dark.xml",
-        "source": "C:\\Users\\刘欢\\.gradle\\caches\\transforms-1\\files-1.1\\appcompat-v7-25.0.1.aar\\03aaa23ebbea11dbacd4cf09639e8fd6\\res\\color-v11\\abc_background_cache_hint_selector_material_dark.xml"
-    },
-    {
-        "merged": "C:\\Users\\刘欢\\Desktop\\0323\\app\\build\\intermediates\\res\\merged\\debug\\color-v11\\abc_background_cache_hint_selector_material_light.xml",
-        "source": "C:\\Users\\刘欢\\.gradle\\caches\\transforms-1\\files-1.1\\appcompat-v7-25.0.1.aar\\03aaa23ebbea11dbacd4cf09639e8fd6\\res\\color-v11\\abc_background_cache_hint_selector_material_light.xml"
-    },
-    {
-        "merged": "C:\\Users\\刘欢\\Desktop\\0323\\app\\build\\intermediates\\res\\merged\\debug\\color-v11\\abc_background_cache_hint_selector_material_dark.xml",
-        "source": "C:\\Users\\刘欢\\.gradle\\caches\\transforms-1\\files-1.1\\appcompat-v7-25.0.1.aar\\03aaa23ebbea11dbacd4cf09639e8fd6\\res\\color-v11\\abc_background_cache_hint_selector_material_dark.xml"
-    },
-    {
-        "merged": "C:\\Users\\刘欢\\Desktop\\Work\\0328\\app\\build\\intermediates\\res\\merged\\debug\\color-v11\\abc_background_cache_hint_selector_material_dark.xml",
-        "source": "C:\\Users\\刘欢\\.gradle\\caches\\transforms-1\\files-1.1\\appcompat-v7-25.0.1.aar\\03aaa23ebbea11dbacd4cf09639e8fd6\\res\\color-v11\\abc_background_cache_hint_selector_material_dark.xml"
-    },
-    {
-        "merged": "C:\\Users\\刘欢\\Desktop\\Work\\0421\\app\\build\\intermediates\\res\\merged\\debug\\color-v11\\abc_background_cache_hint_selector_material_light.xml",
-        "source": "C:\\Users\\刘欢\\.gradle\\caches\\transforms-1\\files-1.1\\appcompat-v7-25.0.1.aar\\03aaa23ebbea11dbacd4cf09639e8fd6\\res\\color-v11\\abc_background_cache_hint_selector_material_light.xml"
+        "merged": "F:\\Work\\Android Project\\sdk28\\app\\build\\intermediates\\res\\merged\\debug\\color-v11\\abc_background_cache_hint_selector_material_dark.xml",
+        "source": "C:\\Users\\Administrator\\.gradle\\caches\\transforms-1\\files-1.1\\appcompat-v7-25.0.1.aar\\aae4edb8004783cb35e8514a3c8bc8c7\\res\\color-v11\\abc_background_cache_hint_selector_material_dark.xml"
     }
 ]

@@ -1,29 +1,31 @@
 package cn.hxc.imgrecognition;
 
+import android.graphics.Bitmap;
+
 /**
  * Created by 刘欢 on 2018/4/21.
  */
 
 public class Item {
     private String txtContent;  //显示的文本内容
-    private String picPath;     //要显示的图片的地址
+    private Bitmap bitmap;     //要显示的图片的地址
 
     //构造函数
-    public Item(String txtContent, String picPath) {
+    public Item(String txtContent, Bitmap bitmap) {
         this.txtContent = txtContent;
-        this.picPath = picPath;
+        this.bitmap = bitmap;
     }
 
-    public void setPicPath(String picPath) {
-        this.picPath = picPath;
+    public void setBitmap(Bitmap bitmap) {
+        this.bitmap = bitmap;
     }
 
     public void setTxtContent(String txtContent) {
         this.txtContent = txtContent;
     }
 
-    public String getPicPath() {
-        return picPath;
+    public Bitmap getBitmap() {
+        return bitmap;
     }
 
     public String getTxtContent() {

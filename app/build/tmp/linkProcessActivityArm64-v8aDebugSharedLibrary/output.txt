@@ -1,4 +1,4 @@
-See file:///C:/Users/Αυ»Ά/Desktop/Work/0421/app/build/tmp/linkProcessActivityArm64-v8aDebugSharedLibrary/output.txt for all output for linkProcessActivityArm64-v8aDebugSharedLibrary.
+See file:///F:/Work/Android%20Project/sdk28/app/build/tmp/linkProcessActivityArm64-v8aDebugSharedLibrary/output.txt for all output for linkProcessActivityArm64-v8aDebugSharedLibrary.
 linking libprocessActivity.so successful.
 
-Finished linkProcessActivityArm64-v8aDebugSharedLibrary, see full log file:///C:/Users/Αυ»Ά/Desktop/Work/0421/app/build/tmp/linkProcessActivityArm64-v8aDebugSharedLibrary/output.txt.
+Finished linkProcessActivityArm64-v8aDebugSharedLibrary, see full log file:///F:/Work/Android%20Project/sdk28/app/build/tmp/linkProcessActivityArm64-v8aDebugSharedLibrary/output.txt.

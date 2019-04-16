@@ -1,9 +1,11 @@
 package cn.hxc.imgrecognition;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -25,7 +27,9 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -33,6 +37,14 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import cn.hxc.imgrecognitionSRI_OCR.R;
 
@@ -40,40 +52,46 @@ import cn.hxc.imgrecognitionSRI_OCR.R;
  * Created by 刘欢 on 2018/2/1.
  */
 
-public class inputInformation extends Activity {
+public class inputInformation extends Activity implements Callable<String>{
 
-    public String sxname; //书写人名称
-    public String sxnametemp;//按照指定方式存的书写人
-    public String cjname; //采集人名称
+    public static String sxname; //书写人名称
+    public static String sxnametemp;//按照指定方式存的书写人
+    public static String cjname; //采集人名称
     public String cjnametemp;//按照指定方式存的采集人
-    public String titlesxname;//txt文本标题中书写人的名字
-    public String titlenum;//txt文本标题中文本的序列
-    public String txtID;//每个文本唯一的ID
-    public String imageID;//每个图片唯一的ID
-    public String nowTime;//获取的系统时间
-    public String phoneID;//手机唯一的ID
-    public String SendString;//手机向webAPI发送的字符串
-    public String txtUrlWeb="http://101.132.159.49/PaisService.asmx/PaisUploadTxts?";//需要上传txt的URL
-    public String imageUrlWeb="http://101.132.159.49/PaisService.asmx/PaisUploadImages?";//需要上传jpg的URL
-    public String oracleUrl="http://101.132.159.49/PaisService.asmx/PaisInsertImages?";//需要上传数据库的URL
-    public String oracleString;
-    public String imageBackUrl;
-    public String txtBackUrl;//完整的url，包括上传的字符串
-    String featurePath=Environment.getExternalStorageDirectory()+ File.separator + "WR_LPAIS"+ File.separator + "txt"+ File.separator+"feature.txt";
-    String AnotherfeaturePath=Environment.getExternalStorageDirectory()+ File.separator + "WR_LPAIS"+ File.separator + "txt"+ File.separator+"Anotherfeature.txt";
-    String imgpath= Environment.getExternalStorageDirectory() + File.separator + "WR_LPAIS"+ File.separator + "ThinNorTemp.jpg";  //手机的根目录下存细化图片的地址
-    Bitmap myimgae;  //手机根目录下存细化的图片
-    String showimgpath= Environment.getExternalStorageDirectory() + File.separator + "WR_LPAIS"+ File.separator + "NorTemp.jpg";  //手机的根目录下存细化图片的地址
-    Bitmap myshowimgae;  //手机根目录下存细化的图片
-    byte[] imageData;//图片的数据
-    public byte[] bytes;
-    String sendtemp;
-    String imageResult;//插入图片返回的结果
-    String txtResult;//插入文本返回结果
-    String databaseResult;//插入数据库返回的结果
-    String toastResult;//上传完成后最后弹出的结果
+    public static String titlesxname;//txt文本标题中书写人的名字
+    public static String titlenum;//txt文本标题中文本的序列
+    public static String txtID;//每个文本唯一的ID
+    public static String imageID;//每个图片唯一的ID
+    public static String nowTime;//获取的系统时间
+    public static String phoneID = "";//手机唯一的ID
+    public static String SendString;//手机向webAPI发送的字符串
+    public static String txtUrlWeb="http://119.23.33.12/PaisService.asmx/PaisUploadTxts?";//需要上传txt的URL
+    public static String imageUrlWeb="http://119.23.33.12/PaisService.asmx/PaisUploadImages?";//需要上传jpg的URL
+    public static String oracleUrl="http://119.23.33.12/PaisService.asmx/PaisInsertImages?";//需要上传数据库的URL
+    public static String oracleString;
+    public static String imageBackUrl;
+    public static String txtBackUrl;//完整的url，包括上传的字符串
+    static String featurePath=Environment.getExternalStorageDirectory()+ File.separator + "WR_LPAIS"+ File.separator + "txt"+ File.separator+"feature.txt";
+    static String AnotherfeaturePath=Environment.getExternalStorageDirectory()+ File.separator + "WR_LPAIS"+ File.separator + "txt"+ File.separator+"Anotherfeature.txt";
+    static String imgpath= Environment.getExternalStorageDirectory() + File.separator + "WR_LPAIS"+ File.separator + "NorTemp.jpg";  //手机的根目录下存细化图片的地址
+    static Bitmap myimgae;  //手机根目录下存细化的图片
+    static String showimgpath= Environment.getExternalStorageDirectory() + File.separator + "WR_LPAIS"+ File.separator + "NorTemp.jpg";  //手机的根目录下存细化图片的地址
+    static String yuanTupath= Environment.getExternalStorageDirectory() + File.separator + "WR_LPAIS"+ File.separator + "originalPic.jpg";
+    static Bitmap myshowimgae;  //手机根目录下存细化的图片
+    static byte[] imageData;//图片的数据
+    static public byte[] bytes;
+    static String sendtemp;
+    static String imageResult;//插入图片返回的结果
+    static String txtResult;//插入文本返回结果
+    static String databaseResult;//插入数据库返回的结果
+    static String toastResult;//上传完成后最后弹出的结果
     CheckBox ckb_save;
     CheckBox ckb_send;
+    CheckBox ckb_yuantu;
+    EditText cjr_login;
+    static String imageReturn = "";
+    static String txtReturn = "";
+    static String oracleReturn = "";
 
     protected void onCreate(Bundle savedInstanceState) {
         // TODO Auto-generated method stub
@@ -88,6 +106,9 @@ public class inputInformation extends Activity {
 
         ckb_save = (CheckBox) findViewById(R.id.ckb_save);
         ckb_send = (CheckBox) findViewById(R.id.ckb_send);
+        ckb_yuantu = (CheckBox) findViewById(R.id.ckb_yuantu);
+        cjr_login = (EditText) findViewById(R.id.cjname);
+        cjr_login.setText(MainActivity.userName);
     }
 
     /*点击确定按钮执行的操作，将图片及其信息保存在指定文件夹下
@@ -103,33 +124,29 @@ public class inputInformation extends Activity {
         Date curDate =  new Date(System.currentTimeMillis());
         nowTime  =  formatter.format(curDate);
 
-        //获取手机唯一的序列号，每一个手机都有一个唯一的序列号，并记录到相应的TXT文本里
-        TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
-        phoneID = tm.getDeviceId();//获取智能设备唯一编号
+        if (checkSelfPermission(Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
+            TelephonyManager tm = (TelephonyManager)this.getSystemService(Context.TELEPHONY_SERVICE);
+            phoneID = tm.getDeviceId();//获取智能设备唯一编号
+        }
 
         if (!sxname.isEmpty()&&!cjname.isEmpty())
         {
-
-            if(ckb_save.isChecked()&&ckb_send.isChecked()){
-                saveimage();
-                saveTxt();
-                sendOut();
-                savePictureData(featurePath);
-                savePictureData(AnotherfeaturePath);
+            if(ckb_save.isChecked()){
+                String uuid = UUID.randomUUID().toString();
+                saveimage(uuid);
+                saveTxt(uuid);
+                savePictureData(featurePath,uuid);
+                savePictureData(AnotherfeaturePath,uuid);
             }
-
-            if(ckb_save.isChecked()&&!ckb_send.isChecked()){
-                saveimage();
-                saveTxt();
-                savePictureData(featurePath);
-                savePictureData(AnotherfeaturePath);
+            if(ckb_send.isChecked()){
+                String uuid = UUID.randomUUID().toString();
+                sendOut(uuid);
+                savePictureData(AnotherfeaturePath,uuid);
             }
-
-            if(!ckb_save.isChecked()&&ckb_send.isChecked()){
-                sendOut();
-                savePictureData(AnotherfeaturePath);
+            if(ckb_yuantu.isChecked()){
+                String uuid = UUID.randomUUID().toString();
+                saveYuanTu(uuid);
             }
-
 
             inputInformation.this.finish();
             Intent intent = new Intent(inputInformation.this, takePhoto.class);
@@ -147,65 +164,70 @@ public class inputInformation extends Activity {
         startActivity(intent);
     }
 
-    //点击发送键，将图片及其信息先保存至本地然后发送到服务器
-    public void sendOut(){
-         int a = getFeatureData();
+    //点击发送键，发送到服务器
+    public void sendOut(String uuid){
 
-        //将书写人和序号按照规则存储
-        sxnametemp=sxname;
-        if(sxnametemp.length()<3){
-            int b=3-sxnametemp.length();
-            while(b!=0){
-                sxnametemp+="__";
-                b--;
-            }
-        }
-        titlenum=String.valueOf(a);
-        while(titlenum.length()<6){
-            StringBuilder SB=new StringBuilder(titlenum);
-            SB.insert(0,'0');
-            titlenum=SB.toString();
-        }
-
-        //上传txt的操作
-        txtID=sxnametemp+titlenum;
-        imageID=txtID;
-        SendString=txtID + "\r\n" + sxname + "\r\n" + cjname + "\r\n" +nowTime + "\r\n" + phoneID + "\r\n";
+        SendString=uuid + "\r\n" + sxname + "\r\n" + cjname + "\r\n" +nowTime + "\r\n" + phoneID + "\r\n";
         String SendString64=Base64.encodeToString(SendString.getBytes(),0);
-        txtBackUrl="base64string="+ URLEncoder.encode(SendString64)+"&orifilename="+URLEncoder.encode(txtID)+".txt";
+        txtBackUrl="base64string="+ URLEncoder.encode(SendString64)+"&orifilename="+URLEncoder.encode(uuid)+".txt";
 
         //上传图片的操作
         imageData=image2Bytes(showimgpath);
         sendtemp=Base64.encodeToString(imageData,0);
-        imageBackUrl="base64string="+URLEncoder.encode(sendtemp)+"&orifilename="+URLEncoder.encode(imageID)+".jpg";
+        imageBackUrl="base64string="+URLEncoder.encode(sendtemp)+"&orifilename="+URLEncoder.encode(uuid)+".jpg";
 
         //插入数据库的操作
-        String oracleStringtemp="IMGMSG::" + imageID + "::" + sxname + "::" + cjname + "::" +nowTime + "::" + phoneID + "::END";
+        String oracleStringtemp="IMGMSG::" + uuid + "::" + sxname + "::" + cjname + "::" +nowTime + "::" + phoneID + "::END";
         oracleString="Picinfo="+URLEncoder.encode(oracleStringtemp);
 
-        Thread sendThread=new Thread(new Runnable() {
+        inputInformation ctt = new inputInformation();
+        FutureTask<String> ft = new FutureTask<>(ctt);
+
+        new Thread(ft,"有返回值的线程").start();
+
+        String concatStr = " ";
+        try
+        {
+            concatStr = ft.get();
+            System.out.println("子线程的返回值："+ft.get());
+        } catch (InterruptedException e)
+        {
+            e.printStackTrace();
+        } catch (ExecutionException e)
+        {
+            e.printStackTrace();
+        }
+        Toast.makeText(this,"上传成功！",Toast.LENGTH_LONG).show();
+        /*if(concatStr.equals("200[10200]200"))
+            Toast.makeText(this,"上传成功！",Toast.LENGTH_LONG).show();
+        else
+            Toast.makeText(this,"上传失败！",Toast.LENGTH_LONG).show();*/
+            //Toast.makeText(this,concatStr,Toast.LENGTH_LONG).show();
+
+
+        /*Thread sendThread=new Thread(new Runnable() {
             @Override
             public void run() {
-                GETUtils(txtUrlWeb,txtBackUrl);  //上传TXT
+                txtReturn = GETUtils(txtUrlWeb,txtBackUrl);  //上传TXT
                 //GETUtils(imageUrlWeb,imageBackUrl);//上传图片
-                GETUtilImgs(imageUrlWeb,imageBackUrl);
-                GETUtils(oracleUrl,oracleString);//插入数据库
+                imageReturn = GETUtilImgs(imageUrlWeb,imageBackUrl);
+                oracleReturn = GETUtils(oracleUrl,oracleString);//插入数据库
             }
         });
-        sendThread.start();
-
-        Toast.makeText(this,"上传成功！",Toast.LENGTH_LONG).show();
-
-        TimerTask task = new TimerTask(){
-            public void run(){
-                //execute the task
-            }
-        };
-        Timer timer = new Timer();
-        timer.schedule(task, 1000);
+        sendThread.start();*/
+    }
+    @Override
+    public String call() throws Exception
+    {
+        txtReturn = GETUtils(txtUrlWeb,txtBackUrl);  //上传TXT
+        //GETUtils(imageUrlWeb,imageBackUrl);//上传图片
+        imageReturn = GETUtilImgs(imageUrlWeb,imageBackUrl);
+        oracleReturn = GETUtils(oracleUrl,oracleString);//插入数据库
+        String concatStr = txtReturn + imageReturn + oracleReturn;
+        return concatStr;
     }
 
-    public byte[] image2Bytes(String imgPath)
+        public byte[] image2Bytes(String imgPath)
     {
         try{
             FileInputStream fin = new FileInputStream(new File(imgPath));
@@ -224,6 +246,8 @@ public class inputInformation extends Activity {
     //Andriod访问WebAPI
     public String GETUtils(String urlString,String inputLine){
         String msg="";
+        int code = 0;
+        String codeString;
         try{
             String WholeString=urlString+inputLine;
             URL url = new URL(WholeString);
@@ -239,9 +263,7 @@ public class inputInformation extends Activity {
             conn.setInstanceFollowRedirects(true);
             conn.setConnectTimeout(3000);
             conn.connect();
-            int code =conn.getResponseCode();
-            int dd=code;
-            int a=dd;
+            code = conn.getResponseCode();
 
             if (code==200)
             {
@@ -261,16 +283,54 @@ public class inputInformation extends Activity {
         }catch (Exception e){
             e.printStackTrace();
         }
-        return msg;
+
+        codeString = Integer.toString(code);
+        return codeString;
     }
 
     //上传图片
-    public void GETUtilImgs(String urlString,String imgstr){
+    public String GETUtilImgs(String urlString,String imgstr){
+        String result = "";
         try{
-            String result=HttpUtils.doPost(urlString,imgstr);
-
+            result = HttpUtils.doPost(urlString,imgstr);
+            result = getContext(result);
         }catch (Exception e){
             e.printStackTrace();
+        }
+        return result;
+      }
+
+    public static String getContext(String html) {
+        List resultList = new ArrayList();
+        Pattern p = Pattern.compile(">([^</]+)</");//正则表达式 commend by danielinbiti
+        Matcher m = p.matcher(html );
+        while (m.find()) {
+            resultList.add(m.group(1));
+        }
+        return resultList.toString();
+    }
+
+    public void saveYuanTu(String uuid){
+        Bitmap yuanTuImage = BitmapFactory.decodeFile(yuanTupath);
+        File file = new File(
+                Environment.getExternalStorageDirectory()
+                        + File.separator + "WR_LPAIS"+ File.separator + "yuanTu");
+
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+
+        FileOutputStream fos = null;
+        FileOutputStream showfos = null;
+        //按规定格式保存图片
+        try {
+            fos = new FileOutputStream(file + File.separator + uuid+".jpg");
+            yuanTuImage.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+
+            fos.flush();
+            fos.close();
+        } catch (IOException e) {
+            Toast.makeText(this,"save faied!",Toast.LENGTH_LONG).show();
         }
     }
 
@@ -279,7 +339,7 @@ public class inputInformation extends Activity {
     NAME是中文名称，用6个字节表示，2个字节表示一个汉字，不足三个字用两个下划线表示。
     ######是6位数字编号，从000001开始计数。
     * */
-    public int saveimage()
+    public int saveimage(String uuid)
     {
         titlesxname=sxname;
         myimgae = BitmapFactory.decodeFile(imgpath);
@@ -300,12 +360,11 @@ public class inputInformation extends Activity {
         if (!file.exists()) {
             file.mkdirs();
         }
-        final int i = getFeatureData();
         int newname = 0;
         FileOutputStream fos = null;
         FileOutputStream showfos = null;
 
-        if(titlesxname.length()<3){
+/*        if(titlesxname.length()<3){
             int a=3-titlesxname.length();
             while(a!=0){
                 titlesxname+="__";
@@ -318,15 +377,14 @@ public class inputInformation extends Activity {
             StringBuilder SB=new StringBuilder(titlenum);
             SB.insert(0,'0');
             titlenum=SB.toString();
-        }
+        }*/
 
         //按规定格式保存图片
         try {
-            newname=i;
-            fos = new FileOutputStream(file + File.separator +titlesxname+ titlenum+".jpg");
+            fos = new FileOutputStream(file + File.separator + uuid +".jpg");
             myimgae.compress(Bitmap.CompressFormat.JPEG, 100, fos);
 
-            showfos = new FileOutputStream(showfile + File.separator +titlesxname+ titlenum+".jpg");
+            showfos = new FileOutputStream(showfile + File.separator + uuid +".jpg");
             myshowimgae.compress(Bitmap.CompressFormat.JPEG, 100, showfos);
 
             fos.flush();
@@ -345,17 +403,7 @@ public class inputInformation extends Activity {
     NAME是中文名称，用6个字节表示，2个字节表示一个汉字，不足三个字用两个下划线表示。
     ######是6位数字编号，从000001开始计数。
      */
-    public void saveTxt(){
-        int a = getFeatureData();
-
-            //人名不足3位的补'_'
-            if(titlesxname.length()<3){
-                int b=3-titlesxname.length();
-                while(b!=0){
-                    titlesxname+="__";
-                    b--;
-                }
-            }
+    public void saveTxt(String uuid){
             //final String snewname = String.valueOf(a);
             File txtfile = new File(
                     Environment.getExternalStorageDirectory()
@@ -364,17 +412,10 @@ public class inputInformation extends Activity {
             if (!txtfile.exists()) {
                 txtfile.mkdirs();
             }
-////////-----------------------------保存图片的信息，如书写人、采集人、手机号等信息--------------------------------------------
-            //数字不足6位的前面补0
-            titlenum=String.valueOf(a);
-            while(titlenum.length()<6){
-                StringBuilder SB=new StringBuilder(titlenum);
-                SB.insert(0,'0');
-                titlenum=SB.toString();
-            }
+////////-----------------------------保存图片的信息，如书写人、采集人、手机号等信息-------------------------------------------
             File sxf = new File(
                     Environment.getExternalStorageDirectory()
-                            + File.separator + "WR_LPAIS" + File.separator + "txt" + File.separator + titlesxname+titlenum+".txt");
+                            + File.separator + "WR_LPAIS" + File.separator + "txt" + File.separator + uuid +".txt");
             if(!sxf.exists()){
                 try{
                     sxf.createNewFile();
@@ -412,11 +453,8 @@ public class inputInformation extends Activity {
 /////////---------------------------------保存图像的特征数组--------------------------------------------------------
     }
 
-    public void savePictureData(String Path){
+    public void savePictureData(String Path,String uuid){
         File f = new File(Path);
-
-        int a = getFeatureData();
-        final String snewname = String.valueOf(a);
 
         FileWriter fw = null;
         try {
@@ -426,7 +464,7 @@ public class inputInformation extends Activity {
         }
 
         PrintWriter pw = new PrintWriter(fw);
-        pw.print(snewname + " ");
+        pw.print(uuid + " ");
         pw.print(sxname + " ");
         for (int ii = 0; ii < 920; ii++) {
             String temp = String.format("%-6f", processActivity.ixyj[ii]);
@@ -443,14 +481,6 @@ public class inputInformation extends Activity {
             e.printStackTrace();
         }
     }
-
-    public int getFeatureData(){
-        int num=0;
-        try {
-            num=processActivity.getTextLines(AnotherfeaturePath);
-        }catch (IOException e){
-            e.printStackTrace();
-        }
-        return num;
-    }
 }
+
+

@@ -29,7 +29,7 @@ extern "C" {
  * Signature: ([I)V
  */
 JNIEXPORT jstring JNICALL Java_cn_hxc_imgrecognition_processActivity_callint
-  (JNIEnv *, jobject, jintArray, jint width, jint height,jstring num,jstring win2,jstring whi2,jstring model,jint flag);
+        (JNIEnv *, jobject, jintArray, jint width, jint height,jstring num,jstring win2,jstring whi2,jstring model,jint flag);
 
 #ifdef __cplusplus
 }

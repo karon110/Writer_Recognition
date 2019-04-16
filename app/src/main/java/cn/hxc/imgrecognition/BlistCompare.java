@@ -178,70 +178,19 @@ public class BlistCompare extends Activity {
         Bitmap NorBitmap = Bitmap.createBitmap(binaryBitmap, begin_x, begin_y, NorWidth, NorHeight);
         //Bitmap a=new Bitmap();
         Bitmap resizeNorBitmap = Bitmap.createBitmap(NorBitmap, 0, 0, NorWidth, NorHeight, matrix, true);
-//End归一化-------------------------------------------------------------------------------------------------------------------
+//End归一化------------------------------------------------------------------------------------------------------------------
+        by = new int[height * width];
 
-//Begin细化-----------------------------------------------------------------------------------------------------------------------
-        ZhangThinFilter zhang1 = new ZhangThinFilter();
-        boolean goon = true;
-        Arrays.fill(step, 0);
-        //int i=5;
-
-        //执行Zhang-Sue算法
-        while (goon) {
-            goon = false;
-            boolean s1 = zhang1.ZhangStep1(by, step, height, width);
-            zhang1.deletepixel(by, step, height, width);
-            Arrays.fill(step, 0);
-            // step two
-            boolean s2 = zhang1.ZhangStep2(by, step, height, width);
-            zhang1.deletepixel(by, step, height, width);
-            Arrays.fill(step, 0);
-            if (s1 && s2) {
-                goon = true;
-            }
+        for (int i = 0; i < height * width; i++) {
+            by[i] = (0xff & BinaryPixels[i]);
         }
-        int numPixels[] = new int[width * height];
-        for (int p = 0; p < height; p++) {
-            for (int q = 0; q < width; q++) {
-                int gray = by[p * width + q];
-                int newcolor = (gray << 16) | (gray << 8) | (gray);
-                numPixels[p * width + q] = newcolor;
-            }
-        }
-        //ixyj = xyj(width, height, 1);
-        Bitmap ThinngBitmap = Bitmap.createBitmap(numPixels, 0, width,
-                width, height, Bitmap.Config.RGB_565);
-/////
-        //begin细化+归一化-------------------------------------------------------------------------------------------------------------
-        Bitmap NorThinBitmap = Bitmap.createBitmap(ThinngBitmap, begin_x, begin_y, NorWidth, NorHeight);
-        Bitmap resizeNorThinBitmap = Bitmap.createBitmap(NorThinBitmap, 0, 0, NorWidth, NorHeight, matrix, true);
+        ixyj = xyj(width, height, 1);
 
-        pixels = new int[NeedHeight * NeedWidth];
-        resizeNorThinBitmap.getPixels(pixels, 0, NeedWidth, 0, 0, NeedWidth, NeedHeight);
-        by = new int[NeedWidth * NeedHeight];
-
-        for (int i = 0; i < NeedHeight * NeedWidth; i++) {
-            by[i] = (0xff & pixels[i]);
-        }
-        ixyj = xyj(NeedWidth, NeedHeight, 1);
         norTxt.setText("归一化之后的图");
         norView.setImageBitmap(resizeNorBitmap);
 
         FileOutputStream fos1;
 
-        try {
-            File file1 = new File(
-                    Environment.getExternalStorageDirectory()
-                            + File.separator + "WR_LPAIS");
-            //xyj
-            fos1 = new FileOutputStream(file1 + File.separator
-                    + "ThinNorTemp.jpg");
-            resizeNorThinBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos1);
-            fos1.flush();
-            fos1.close();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         try {
             File file1 = new File(
                     Environment.getExternalStorageDirectory()
@@ -361,7 +310,7 @@ public class BlistCompare extends Activity {
 
         if (datanum > 0) {
             try{
-                processActivity.getALLLines(f.toString(), datanum, base, iamgeID);
+                processActivity.getALLLines(f.toString(), 0,datanum, base, iamgeID);
             }catch (IOException e){
                 e.printStackTrace();
             }
@@ -408,6 +357,8 @@ public class BlistCompare extends Activity {
         String name;
         String num;
 
+        int trueIndex = 0;
+        int tankuang = 0;
         for (int i = 0; i < NOcandidate && i < datanum; i++) {
             if (iamgeID[i].distanse > yuzhi[Threshold]) {
                 break;
@@ -428,12 +379,38 @@ public class BlistCompare extends Activity {
                 num = SB.toString();
             }
 
+            if(iamgeID[0].name.equals("印刷体")){
+                //printText.setTextSize(TypedValue.COMPLEX_UNIT_SP,30);
+                String tempStr="无法识别！";
+                Item item=new Item(tempStr,null); //picPath[i]为第i张图片的地址
+                list.add(item);
+                tankuang++;
+                break;
+            }
+
+            if(iamgeID[trueIndex].name.equals("印刷体")){
+                //printText.setTextSize(TypedValue.COMPLEX_UNIT_SP,30);
+                i--;
+                trueIndex++;
+                continue;
+            }
+
             String temp;
-            String picPath = Environment.getExternalStorageDirectory() + File.separator + "WR_LPAIS" + File.separator + "ShowImage" + File.separator + name + num + ".jpg";
-            temp = "第" + (i + 1) + "候选人姓名：" + iamgeID[i].name + "  相似距离：" + iamgeID[i].distanse;
-            Item item = new Item(temp, picPath); //picPath[i]为第i张图片的地址
+            String picPath=Environment.getExternalStorageDirectory() + File.separator + "WR_LPAIS" + File.separator + "ShowImage" + File.separator + name+num+".jpg";
+
+            temp="第"+(i+1)+"候选人姓名："+iamgeID[trueIndex].name+"  相似距离："+iamgeID[trueIndex].distanse;
+
+            Bitmap showBitmap = BitmapFactory.decodeFile(picPath);
+            Item item=new Item(temp,showBitmap); //picPath[i]为第i张图片的地址
             list.add(item);  //添加item
+            flag++;
+
+            trueIndex++;
         }
+        if (flag == 0 &&tankuang == 1) {
+            Toast.makeText(this, "没有在数据库找到对应的书写人！", Toast.LENGTH_LONG).show();
+        }
+        takePhoto tp = new takePhoto();
     }
 
     float[] xyj(int width, int height, int flag) {
@@ -727,7 +704,7 @@ public class BlistCompare extends Activity {
         startActivity(intent);
     }
     public void botmBlacklist(View v){
-        Intent intent = new Intent(this, blackList.class);
+        Intent intent = new Intent(this, blackListFromPhone.class);
         startActivity(intent);
     }
 
@@ -740,7 +717,7 @@ public class BlistCompare extends Activity {
         startActivity(intent);
     }
     public void onBackPressed(){
-        Intent intent = new Intent(BlistCompare.this, blackList.class);
+        Intent intent = new Intent(BlistCompare.this, blackListFromPhone.class);
         startActivity(intent);
     }
 

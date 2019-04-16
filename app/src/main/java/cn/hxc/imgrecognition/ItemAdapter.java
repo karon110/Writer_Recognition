@@ -27,13 +27,13 @@ public class ItemAdapter extends ArrayAdapter<Item> {
 
     @NonNull
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, ViewGroup parent){
         Item item = getItem(position);
         View view = LayoutInflater.from(getContext()).inflate(layoutId, parent, false);
         ImageView imageView = (ImageView) view.findViewById(R.id.item_img);
         TextView textView = (TextView) view.findViewById(R.id.item_text);
         //根据图片的地址decode出图片并转化成Bitmap格式并绑定。
-        imageView.setImageBitmap(BitmapFactory.decodeFile(item.getPicPath()));
+        imageView.setImageBitmap(item.getBitmap());
         textView.setText(item.getTxtContent());
 
         return view;

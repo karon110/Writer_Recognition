@@ -1,192 +1,177 @@
 package cn.hxc.imgrecognition;
 
 import android.app.Activity;
-import android.content.ContentResolver;
 import android.content.Intent;
-import android.database.Cursor;
 import android.graphics.Bitmap;
-import android.media.ThumbnailUtils;
-import android.net.Uri;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
-import android.util.Log;
 import android.view.View;
-import android.view.Window;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.ListView;
-import android.widget.Spinner;
-import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import android.graphics.Matrix;
-
-import com.edmodo.cropper.CropImageView;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import cn.hxc.imgrecognitionSRI_OCR.R;
 
 /**
- * Created by 刘欢 on 2018/4/13.
+ * Created by Administrator on 2019/4/11.
  */
 
-public class blackList extends Activity{
+public class blackList extends Activity {
+    public ImageView dPic;
 
-    private Button btnPhone;
-    private Button B_saveblist;
-    private ImageView orignalView;
-    private ImageView norView;
-    private TextView orignalTxt;
-    private TextView norTxt;
-    Bitmap getBmpFormPhone;
-    CropImageView cropImageView;
-    Button cropButton;
+    String ImageID = "38934230-fe1e-41e1-b794-398038b7565b";
+    String ImageUrl = "http://119.23.33.12/PaisService.asmx/GetImageUrlByImageid?";
+    String DownLoadImageUrl = "";
+    String finalID = "";
+    String temp;
 
-    public ImageButton B_contrast;
-    public ImageButton B_QueryLoc;
-    public ImageButton B_QueryDB;
-    public ImageButton B_set;
-    public ImageButton B_blist;
+    Bitmap bitmap;
 
-    private static final String IMAGE_UNSPECIFIED = "image/*";
-    private final int IMAGE_CODE = 0; // 这里的IMAGE_CODE是自己任意定义的
 
     protected void onCreate(Bundle savedInstanceState) {
-            super.onCreate(savedInstanceState);
-            setContentView(R.layout.blacklist);//软件activity的布局
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.blacklist);//软件activity的布局
 
-        B_contrast = (ImageButton) findViewById(R.id.B_contrast);
-        B_QueryLoc = (ImageButton) findViewById(R.id.B_QueryLoc);
-        B_QueryDB = (ImageButton) findViewById(R.id.B_QueryDB);
-        B_set = (ImageButton) findViewById(R.id.B_set);
-        B_blist = (ImageButton) findViewById(R.id.B_blist);
-
-        B_contrast.setBackgroundResource(R.drawable.contrast);
-        B_QueryLoc.setBackgroundResource(R.drawable.searchloc);
-        B_QueryDB.setBackgroundResource(R.drawable.searchdb);
-        B_set.setBackgroundResource(R.drawable.set);
-        B_blist.setBackgroundResource(R.drawable.blacklist_change);
-
-        btnPhone = (Button) findViewById(R.id.btnPhone);
-        B_saveblist=(Button) findViewById(R.id.B_shotblist);
-        cropImageView = (CropImageView) findViewById(R.id.CropImageView);
-        cropButton = (Button) findViewById(R.id.B_shotblist);
-
-        File file1 = new File(
-                Environment.getExternalStorageDirectory()
-                        + File.separator + "WR_LPAIS");
-
-        if (!file1.exists())
-        {
-            file1.mkdirs();
-        }
-
-        btnPhone.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                // TODO Auto-generated method stub
-
-                //setImage1(); // 魅族显示风格：最新，照片，图库；华为：包含有相片的一组目录，
-                // 小米：选择要使用的应用，最后没有结果
-
-                setImage(); //魅族显示风格：图库，文件选择(图片文件) ；华为：最近的照片 小米：选择要使用的应用，最后没有结果
-            }
-        });
-
-        cropButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                final Bitmap croppedImage = cropImageView.getCroppedImage();
-                savePicToPhone(croppedImage);
-                Intent intent = new Intent(blackList.this, BlistCompare.class);
-                startActivity(intent);
-            }
-        });
+        dPic = (ImageView)findViewById(R.id.dpic);
     }
 
-    private void setImage1() {
-        Intent intent = new Intent(Intent.ACTION_PICK, null);
-        intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, IMAGE_UNSPECIFIED);
-        startActivityForResult(intent, IMAGE_CODE);
-    }
-
-    private void setImage() {
-        // TODO Auto-generated method stub
-        // 使用intent调用系统提供的相册功能，使用startActivityForResult是为了获取用户选择的图片
-
-        Intent getAlbum = new Intent(Intent.ACTION_GET_CONTENT);
-        getAlbum.setType(IMAGE_UNSPECIFIED);
-        startActivityForResult(getAlbum, IMAGE_CODE);
-
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // TODO Auto-generated method stub
-        getBmpFormPhone = null;
-        // 外界的程序访问ContentProvider所提供数据 可以通过ContentResolver接口
-        ContentResolver resolver = getContentResolver();
-        if (requestCode == IMAGE_CODE) {
-            try {
-                Uri originalUri = data.getData(); // 获得图片的uri
-                getBmpFormPhone = MediaStore.Images.Media.getBitmap(resolver, originalUri);
-                int pictureSize=getBmpFormPhone.getHeight()*getBmpFormPhone.getWidth();
-                cropImageView.setImageBitmap(getBmpFormPhone);
-                cropButton.setVisibility(View.VISIBLE);
-                    // 显得到bitmap图片
-                    // imageView.setImageBitmap(bm);
-                    String[] proj = { MediaStore.Images.Media.DATA };
-
-                    // 好像是android多媒体数据库的封装接口，具体的看Android文档
-                    Cursor cursor = managedQuery(originalUri, proj, null, null, null);
-
-                    // 按我个人理解 这个是获得用户选择的图片的索引值
-                    int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
-                    // 将光标移至开头 ，这个很重要，不小心很容易引起越界
-                    cursor.moveToFirst();
-                    // 最后根据索引值获取图片路径
-                    String path = cursor.getString(column_index);
-
-            } catch (IOException e) {
-                Log.e("TAG-->Error", e.toString());
-
+    public void dloadpic(View v){
+        finalID = "Imageid=" + URLEncoder.encode(ImageID);
+        Callable<String> callable = new Callable<String>() {
+            public String call() throws Exception {
+                DownLoadImageUrl = GETUtils(ImageUrl,finalID);
+                return DownLoadImageUrl;
             }
-            finally {
-                return;
-            }
-        }
-        super.onActivityResult(requestCode, resultCode, data);
-    }
-
-    public void savePicToPhone(Bitmap bitmap){
+        };
+        FutureTask<String> future = new FutureTask<String>(callable);
+        new Thread(future).start();
         try {
-            File file1 = new File(
-                    Environment.getExternalStorageDirectory()
-                            + File.separator + "WR_LPAIS");
-            FileOutputStream fos;
-            //xyj
-            fos = new FileOutputStream(file1 + File.separator
-                    + "shotPic.jpg");
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
-            fos.flush();
-            fos.close();
-        } catch (Exception e) {
+            System.out.println(future.get());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
             e.printStackTrace();
         }
+        temp = getContext(DownLoadImageUrl);
+        temp = temp.substring(1,temp.length()-1);
+
+        Callable<String> callable2 = new Callable<String>() {
+            public String call() throws Exception {
+                bitmap = getImageBitmap(temp);
+                return "ok";
+            }
+        };
+        FutureTask<String> future2 = new FutureTask<String>(callable2);
+        new Thread(future2).start();
+        try {
+            System.out.println(future2.get());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        dPic.setImageBitmap(bitmap);
     }
 
+
+    public Bitmap getImageBitmap(String url) {
+        URL imgUrl = null;
+        Bitmap bitmap = null;
+        try {
+            imgUrl = new URL(url);
+            HttpURLConnection conn = (HttpURLConnection) imgUrl
+                    .openConnection();
+            conn.setDoInput(true);
+            conn.connect();
+            InputStream is = conn.getInputStream();
+            bitmap = BitmapFactory.decodeStream(is);
+            is.close();
+        } catch (MalformedURLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return bitmap;
+    }
+    public static String getContext(String html) {
+        List resultList = new ArrayList();
+        Pattern p = Pattern.compile(">([^<]+)<");//正则表达式
+        Matcher m = p.matcher(html);
+        while (m.find()) {
+            resultList.add(m.group(1));
+        }
+        return resultList.toString();
+    }
+
+    public String GETUtils(String urlString,String inputLine){
+        String msg="";
+        int code = 0;
+        String codeString;
+        try{
+            String WholeString=urlString+inputLine;
+            URL url = new URL(WholeString);
+            //Toast.makeText(this,WholeString,Toast.LENGTH_LONG).show();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            //设置请求方式
+            conn.setRequestMethod("GET");
+            //设置运行输入,输出:
+            conn.setDoOutput(false);
+            conn.setDoInput(true);
+            //Post方式不能缓存,需手动设置为false
+            conn.setUseCaches(true);
+            conn.setInstanceFollowRedirects(true);
+            conn.setConnectTimeout(3000);
+            conn.connect();
+            code = conn.getResponseCode();
+
+            if (code==200)
+            {
+                BufferedReader read=new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String line=null;
+                while ((line=read.readLine())!=null)
+                {
+                    msg+=line;
+                }
+                read.close();
+            }
+
+            conn.disconnect();
+
+            //Toast.makeText(this,msg,Toast.LENGTH_LONG).show();
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        codeString = Integer.toString(code);
+        return msg;
+    }
+
+    public void SelectPicFromPhone(View v){
+        Intent intent = new Intent(this, blackListFromPhone.class);
+        startActivity(intent);
+    }
+
+    public void SelectPicFromDataBase(View v){
+        Intent intent = new Intent(this, blackListFromDB.class);
+        startActivity(intent);
+    }
 
     public void botmSet(View v){
         Intent intent = new Intent(this, set.class);
@@ -200,7 +185,6 @@ public class blackList extends Activity{
         Intent intent = new Intent(this, blackList.class);
         startActivity(intent);
     }
-
     public void botmQueryLoc(View v){
         Intent intent = new Intent(this, queryLocInfor.class);
         startActivity(intent);
@@ -210,13 +194,7 @@ public class blackList extends Activity{
         startActivity(intent);
     }
     public void onBackPressed(){
-        Intent intent = new Intent(blackList.this, takePhoto.class);
+        Intent intent = new Intent(this, takePhoto.class);
         startActivity(intent);
     }
-
-    public void savePicOfBlist(View v){
-            Intent intent = new Intent(this, inputInformationBlist.class);
-            startActivity(intent);
-    }
-
 }
